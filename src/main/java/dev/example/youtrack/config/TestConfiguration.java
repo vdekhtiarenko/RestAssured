@@ -6,29 +6,26 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-public record TestConfiguration(String baseUrl, String token, String username, String password) {
+public record TestConfiguration(String baseUrl, String token) {
     private static final String DEFAULT_BASE_URL = "http://localhost:8080";
 
     public static TestConfiguration load() {
         Map<String, String> dotenv = readDotEnv(Path.of(".env"));
         String baseUrl = resolve("youtrack.baseUrl", "YOUTRACK_BASE_URL", dotenv, "YOUTRACK_BASE_URL");
         String token = resolve("youtrack.token", "YOUTRACK_TOKEN", dotenv, "YOUTRACK_TOKEN");
-        String username = resolve("youtrack.username", "YOUTRACK_USERNAME", dotenv, "YOUTRACK_USERNAME");
-        String password = resolve("youtrack.password", "YOUTRACK_PASSWORD", dotenv, "YOUTRACK_PASSWORD");
         if (baseUrl == null || baseUrl.isBlank()) {
             baseUrl = DEFAULT_BASE_URL;
         }
         if (token == null || token.isBlank()) {
             throw new IllegalStateException("YouTrack token is missing. Set youtrack.token, YOUTRACK_TOKEN, or YOUTRACK_TOKEN in .env.");
         }
-        return new TestConfiguration(baseUrl.replaceAll("/+$", ""), token,
-                username == null ? "" : username, password == null ? "" : password);
+        return new TestConfiguration(baseUrl.replaceAll("/+$", ""), token);
     }
 
     @Override
     public String toString() {
         return "TestConfiguration[baseUrl=" + baseUrl
-                + ", token=<redacted>, username=<redacted>, password=<redacted>]";
+                + ", token=<redacted>]";
     }
 
     private static String resolve(String propertyName, String environmentName,
