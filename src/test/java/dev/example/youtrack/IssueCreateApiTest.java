@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisplayName("YouTrack issue create endpoint")
-class IssueCreateApiTest extends BaseTest {
+class IssueCreateApiTest extends ApiTestSupport {
     private static final String ISSUE_FIELDS = "id,idReadable,summary,description,project(id,shortName)";
 
     static Stream<CreationCase> issueCreationCases() {

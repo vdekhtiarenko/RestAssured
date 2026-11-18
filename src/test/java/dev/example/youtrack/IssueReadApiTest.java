@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @DisplayName("YouTrack issue read endpoints")
-class IssueReadApiTest extends BaseTest {
+class IssueReadApiTest extends ApiTestSupport {
     private static final String ISSUE_FIELDS = "id,idReadable,summary,description,project(id,shortName)";
 
     @Test

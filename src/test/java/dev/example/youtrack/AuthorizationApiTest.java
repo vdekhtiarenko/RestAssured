@@ -11,7 +11,7 @@ import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DisplayName("YouTrack API authorization")
-class AuthorizationApiTest extends BaseTest {
+class AuthorizationApiTest extends ApiTestSupport {
     @Test
     @DisplayName("GET issues rejects an invalid permanent token")
     void rejectsInvalidToken() {

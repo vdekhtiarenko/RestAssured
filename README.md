@@ -1,4 +1,4 @@
-﻿# YouTrack REST API tests
+# YouTrack REST API tests
 
 Интеграционные тесты REST API YouTrack на Java 17, Maven, RestAssured и JUnit 5. Базовый адрес — `http://localhost:8080`, тесты работают с проектом `DEMO`.
 
@@ -54,14 +54,18 @@ mvn test
 
 Результаты Maven Surefire находятся в `target/surefire-reports/` (`*.txt` и `TEST-*.xml`).
 
+Команда `mvn test` запускает три этапа: `ApiBaseTest` проверяет доступность API с настроенным токеном; затем `DtoTest` проверяет преобразование DTO; после этого API-тесты задач и авторизации запускаются параллельно (до двух потоков). Если preflight или DTO-этап завершается ошибкой, Maven не переходит к следующему этапу. `ApiTestSupport` — абстрактная основа API-тестов, а не отдельный тест; его `@BeforeAll`-подготовка выполняется для каждого класса-наследника.
+
 ## Структура и назначение
 
 - `src/main/java/dev/example/youtrack/config/TestConfiguration.java` — загружает базовый URL и токен из Java properties, переменных среды или `.env`.
 - `src/test/java/dev/example/youtrack/config/ApiSpecifications.java` — общие RestAssured request/response specifications: Bearer авторизация, JSON и ожидаемый HTTP-статус.
 - `src/test/java/dev/example/youtrack/endpoints/ApiEndpoints.java` — константы путей API, чтобы не дублировать строки URL в тестах.
-- `src/test/java/dev/example/youtrack/BaseTest.java` — общие методы настройки запросов, преобразования ответа в DTO и получения ID проекта `DEMO`.
+- `src/test/java/dev/example/youtrack/ApiTestSupport.java` — общие методы настройки запросов, преобразования ответа в DTO и получения ID проекта `DEMO`.
 - `src/main/java/dev/example/youtrack/dto/` — DTO запроса и ответа.
+- `src/test/java/dev/example/youtrack/ApiBaseTest.java` — первый этап: проверка доступности API и токена.
 - `src/test/java/dev/example/youtrack/AuthorizationApiTest.java` — проверка отказа для неверного токена.
+- `src/test/java/dev/example/youtrack/dto/DtoTest.java` — unit-тесты сериализации DTO запроса и десериализации DTO ответов.
 - `src/test/java/dev/example/youtrack/IssueReadApiTest.java` — получение списка задач и чтение задачи по читаемому ID.
 - `src/test/java/dev/example/youtrack/IssueCreateApiTest.java` — параметризованные сценарии создания задачи: валидный запрос, отсутствие summary и несуществующий ID проекта.
 

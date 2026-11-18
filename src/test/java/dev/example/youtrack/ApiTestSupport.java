@@ -11,7 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 
 import static io.restassured.RestAssured.given;
 
-abstract class BaseTest {
+abstract class ApiTestSupport {
     private static TestConfiguration configuration;
     private static String projectId;
 
