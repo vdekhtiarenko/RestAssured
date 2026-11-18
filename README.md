@@ -1,24 +1,23 @@
-# YouTrack REST API tests
+﻿# YouTrack REST API tests
 
 Интеграционные тесты REST API YouTrack на Java 17, Maven, RestAssured и JUnit 5. Базовый адрес — `http://localhost:8080`, тесты работают с проектом `DEMO`.
 
 ## Требования
 
-- JDK 17 или новее (компиляция настроена с `--release 17`)
+- JDK 17 или новее
 - Maven 3.9+
-- Запущенный YouTrack с доступным REST API
+- Доступный YouTrack с REST API и проектом `DEMO`
 - Permanent token YouTrack с доступом к задачам. Для чтения административного списка проектов может понадобиться scope YouTrack Administration.
 
-## Настройка токена
+## Настройка
 
-Создайте permanent token в YouTrack: **Profile → Account Security → New token**. Не вставляйте токен в Git, исходники или вывод команд. Запишите его локально в `.env`:
-
+Для запуска - создать permanent token в YouTrack: **Profile → Account Security → New token**. Записать его локально в `.env`:
 ```dotenv
 YOUTRACK_BASE_URL=http://localhost:8080
-YOUTRACK_TOKEN=вставьте_токен_сюда
+YOUTRACK_TOKEN=ваш_permanent_token
 ```
 
-Файл `.env` игнорируется Git. Отслеживаемый шаблон находится в `.env.example`.
+`.env` игнорируется Git. Базовый адрес по умолчанию — `http://localhost:8080`; его можно переопределить.
 
 Для каждого параметра действует такой порядок приоритета:
 
@@ -32,7 +31,7 @@ YOUTRACK_TOKEN=вставьте_токен_сюда
 **Windows PowerShell**
 
 ```powershell
-$env:YOUTRACK_TOKEN = "ваш-токен"
+$env:YOUTRACK_TOKEN = "ваш_permanent_token"
 $env:YOUTRACK_BASE_URL = "http://localhost:8080"
 mvn test
 ```
@@ -40,14 +39,12 @@ mvn test
 **macOS/Linux**
 
 ```bash
-export YOUTRACK_TOKEN='ваш-токен'
+export YOUTRACK_TOKEN='ваш_permanent_token'
 export YOUTRACK_BASE_URL='http://localhost:8080'
 mvn test
 ```
 
-Java properties также поддерживаются: `-Dyoutrack.token=...` и `-Dyoutrack.baseUrl=...`. Учитывайте, что секрет в аргументах команды может сохраниться в истории shell или быть виден в списке процессов; для токена предпочтительны `.env` или переменная окружения.
-
-Заголовок авторизации формируется как `Authorization: Bearer <token>`. Запросы и ответы не выводятся в консоль, чтобы не раскрыть заголовок.
+Тесты отправляют токен в заголовке `Authorization: Bearer <token>`.
 
 ## Запуск
 
@@ -55,15 +52,37 @@ Java properties также поддерживаются: `-Dyoutrack.token=...` 
 mvn test
 ```
 
-Тесты разрешаются в два потока. Набор содержит шесть REST API сценариев: получение списка задач, создание задачи с последующим чтением по `idReadable`, параметризованные успешное создание/отсутствующий summary/неверный `project.id`, а также запрос с неверным токеном. Тесты получают внутренний `project.id` из `/api/admin/projects`, сопоставляя проект по `shortName=DEMO`. Каждая создаваемая задача получает уникальный UUID в summary и остаётся в YouTrack.
+Результаты Maven Surefire находятся в `target/surefire-reports/` (`*.txt` и `TEST-*.xml`).
 
-На локальном экземпляре YouTrack 2026.2 проверены HTTP `400` при ошибках создания и `401` при неверном токене. Если другая версия или настройки YouTrack вернут иные статусы, фактический ответ будет виден в отчёте Surefire.
+## Структура и назначение
 
-## Отчёты
+- `src/main/java/dev/example/youtrack/config/TestConfiguration.java` — загружает базовый URL и токен из Java properties, переменных среды или `.env`.
+- `src/test/java/dev/example/youtrack/config/ApiSpecifications.java` — общие RestAssured request/response specifications: Bearer авторизация, JSON и ожидаемый HTTP-статус.
+- `src/test/java/dev/example/youtrack/endpoints/ApiEndpoints.java` — константы путей API, чтобы не дублировать строки URL в тестах.
+- `src/test/java/dev/example/youtrack/BaseTest.java` — общие методы настройки запросов, преобразования ответа в DTO и получения ID проекта `DEMO`.
+- `src/main/java/dev/example/youtrack/dto/` — DTO запроса и ответа.
+- `src/test/java/dev/example/youtrack/AuthorizationApiTest.java` — проверка отказа для неверного токена.
+- `src/test/java/dev/example/youtrack/IssueReadApiTest.java` — получение списка задач и чтение задачи по читаемому ID.
+- `src/test/java/dev/example/youtrack/IssueCreateApiTest.java` — параметризованные сценарии создания задачи: валидный запрос, отсутствие summary и несуществующий ID проекта.
 
-После запуска Maven Surefire сохраняет результаты в `target/surefire-reports/`:
+### Эндпоинты, используемые тестами
 
-- `TEST-*.xml` — число тестов, успешные результаты, failures/errors и сведения об ошибках;
-- `*.txt` — текстовый сводный отчёт.
+| Константа | HTTP | Путь | Назначение |
+|---|---|---|---|
+| `ApiEndpoints.PROJECTS` | GET | `/api/admin/projects` | Получить проекты; базовый тест находит проект с `shortName=DEMO` и берет его внутренний ID. |
+| `ApiEndpoints.ISSUES` | GET | `/api/issues` | Получить список задач. |
+| `ApiEndpoints.ISSUES` | POST | `/api/issues` | Создать задачу в проекте. |
+| `ApiEndpoints.ISSUE_BY_READABLE_ID` | GET | `/api/issues/{idReadable}` | Прочитать задачу по читаемому ID, например `DEMO-1`. |
 
-Ожидаемые идентификаторы и summaries созданных задач печатаются в вывод Maven и сохраняются в `system-out` XML-отчётов. Для краткой сводки Surefire в конце команды покажет число тестов, failures и errors.
+`ApiEndpoints` хранит только пути. Базовый URL задается конфигурацией; авторизация и заголовки добавляются общей request specification. Описание ресурсов см. в [официальной документации YouTrack REST API](https://www.jetbrains.com/help/youtrack/devportal/resource-api-admin-projects.html) для проектов и [задач](https://www.jetbrains.com/help/youtrack/devportal/resource-api-issues.html).
+
+## DTO
+
+DTO (Data Transfer Object) описывают JSON, передаваемый API и получаемый от него:
+
+- `IssueCreateRequest` — тело POST-запроса создания задачи (`summary`, `description`, `project`). Поля со значением `null` не сериализуются.
+- `ProjectRef` — вложенная ссылка на проект с его внутренним `id`; используется и в запросе создания, и в DTO ответа задачи.
+- `IssueResponse` — поля задачи, которые проверяют тесты: `id`, `idReadable`, `summary`, `description`, `project`.
+- `ProjectResponse` — `id`, `name`, `shortName` проекта, нужные для выбора `DEMO`.
+
+Тесты указывают `fields` в query string: YouTrack возвращает только запрошенные поля. Для списка/чтения задач запрашиваются `id,idReadable,summary,description,project(id,shortName)`, для проектов — `id,name,shortName`.
